@@ -1,0 +1,15 @@
+# Render deployment configuration for Aurelius Bot
+
+# Build command
+npm install
+
+# Start command
+npm start
+
+# Environment variables (set these in Render dashboard)
+# DISCORD_TOKEN=your_discord_bot_token
+# CLIENT_ID=your_discord_client_id
+# DATABASE_URL=your_postgresql_connection_string
+# OPENAI_API_KEY=your_openai_api_key
+# NODE_ENV=production
+# PORT=3000

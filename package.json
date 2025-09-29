@@ -1,0 +1,31 @@
+{
+  "name": "aurelius-bot",
+  "version": "1.0.0",
+  "description": "Aurelius - Personal IMVU Modeling Assistant Bot",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "deploy": "node src/deploy-commands.js"
+  },
+  "keywords": ["discord", "bot", "imvu", "modeling", "assistant"],
+  "author": "Aurelius Bot",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "drizzle-orm": "^0.29.0",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.2",
+    "sharp": "^0.33.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
