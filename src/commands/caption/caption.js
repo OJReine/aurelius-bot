@@ -168,10 +168,10 @@ async function handleIMVUCaption(interaction, createEmbed, BOT_CONFIG) {
     
     // Save caption to database
     await dbHelpers.saveCaption({
-      userId: interaction.user.id,
+      user_id: interaction.user.id,
       platform: 'imvu',
-      captionText: caption,
-      agencyFormat: agencyName
+      caption_text: caption,
+      agency_format: agencyName
     });
     
   } catch (error) {
@@ -183,7 +183,7 @@ async function handleIMVUCaption(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -240,10 +240,10 @@ async function handleInstagramCaption(interaction, createEmbed, BOT_CONFIG) {
     
     // Save caption to database
     await dbHelpers.saveCaption({
-      userId: interaction.user.id,
+      user_id: interaction.user.id,
       platform: 'instagram',
-      captionText: caption,
-      agencyFormat: agencyName
+      caption_text: caption,
+      agency_format: agencyName
     });
     
   } catch (error) {
@@ -255,7 +255,7 @@ async function handleInstagramCaption(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -272,7 +272,7 @@ async function handleCaptionTemplate(interaction, createEmbed, BOT_CONFIG) {
         BOT_CONFIG.colors.warning
       );
       
-      await interaction.reply({ embeds: [notFoundEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [notFoundEmbed], flags: 64 });
       return;
     }
     
@@ -316,7 +316,7 @@ async function handleCaptionTemplate(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 

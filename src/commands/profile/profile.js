@@ -84,13 +84,13 @@ async function handleProfileSetup(interaction, createEmbed, BOT_CONFIG) {
   
   try {
     const profileData = {
-      userId: interaction.user.id,
-      imvuName,
-      instagramHandle: instagramHandle.startsWith('@') ? instagramHandle : `@${instagramHandle}`,
+      user_id: interaction.user.id,
+      imvu_name: imvuName,
+      instagram_handle: instagramHandle.startsWith('@') ? instagramHandle : `@${instagramHandle}`,
       timezone,
-      captionStyle,
-      preferredAgencies: preferredAgencies ? preferredAgencies.split(',').map(agency => agency.trim()) : [],
-      reminderSettings: {
+      caption_style: captionStyle,
+      preferred_agencies: preferredAgencies ? preferredAgencies.split(',').map(agency => agency.trim()) : [],
+      reminder_settings: {
         streamReminders: true,
         weeklyReminders: true,
         dailyCheckIns: false
@@ -137,7 +137,7 @@ async function handleProfileSetup(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -165,24 +165,24 @@ async function handleProfileView(interaction, createEmbed, BOT_CONFIG) {
     );
     
     profileEmbed.addFields(
-      { name: 'IMVU Name', value: userProfile.imvuName || 'Not set', inline: true },
-      { name: 'Instagram Handle', value: userProfile.instagramHandle || 'Not set', inline: true },
+      { name: 'IMVU Name', value: userProfile.imvu_name || 'Not set', inline: true },
+      { name: 'Instagram Handle', value: userProfile.instagram_handle || 'Not set', inline: true },
       { name: 'Timezone', value: userProfile.timezone || 'UTC', inline: true },
-      { name: 'Caption Style', value: userProfile.captionStyle || 'Elegant', inline: true },
-      { name: 'Profile Created', value: new Date(userProfile.createdAt).toLocaleDateString(), inline: true },
-      { name: 'Last Updated', value: new Date(userProfile.updatedAt).toLocaleDateString(), inline: true }
+      { name: 'Caption Style', value: userProfile.caption_style || 'Elegant', inline: true },
+      { name: 'Profile Created', value: new Date(userProfile.created_at).toLocaleDateString(), inline: true },
+      { name: 'Last Updated', value: new Date(userProfile.updated_at).toLocaleDateString(), inline: true }
     );
     
-    if (userProfile.preferredAgencies && userProfile.preferredAgencies.length > 0) {
+    if (userProfile.preferred_agencies && userProfile.preferred_agencies.length > 0) {
       profileEmbed.addFields({
         name: 'Preferred Agencies',
-        value: userProfile.preferredAgencies.map(agency => `• ${agency}`).join('\n'),
+        value: userProfile.preferred_agencies.map(agency => `• ${agency}`).join('\n'),
         inline: false
       });
     }
     
-    if (userProfile.reminderSettings) {
-      const reminders = userProfile.reminderSettings;
+    if (userProfile.reminder_settings) {
+      const reminders = userProfile.reminder_settings;
       const reminderStatus = [];
       if (reminders.streamReminders) reminderStatus.push('Stream reminders');
       if (reminders.weeklyReminders) reminderStatus.push('Weekly reminders');
@@ -208,7 +208,7 @@ async function handleProfileView(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -244,10 +244,10 @@ async function handleProfileUpdate(interaction, createEmbed, BOT_CONFIG) {
         updateData.timezone = value;
         break;
       case 'preferred_agencies':
-        updateData.preferredAgencies = value.split(',').map(agency => agency.trim());
+        updateData.preferred_agencies = value.split(',').map(agency => agency.trim());
         break;
       case 'caption_style':
-        updateData.captionStyle = value;
+        updateData.caption_style = value;
         break;
     }
     
@@ -276,6 +276,6 @@ async function handleProfileUpdate(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
