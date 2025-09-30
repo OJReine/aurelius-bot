@@ -4,6 +4,7 @@ import { dirname, join } from 'path';
 import { readdirSync } from 'fs';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import http from 'http';
 import { dbHelpers } from './database/schema.js';
 import { initializeDatabase } from './database/init.js';
 
@@ -257,9 +258,29 @@ process.on('uncaughtException', (error) => {
 
 // Graceful shutdown
 process.on('SIGINT', () => {
-  console.log('\n◈ Shutting down gracefully...');
-  client.destroy();
-  process.exit(0);
+  console.log('\n◆ Shutting down gracefully...');
+  server.close(() => {
+    console.log('◆ HTTP server closed');
+    client.destroy();
+    process.exit(0);
+  });
+});
+
+// Create HTTP server for Render port binding
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    status: 'online',
+    bot: 'Aurelius',
+    message: 'Aurelius Discord Bot is running!',
+    timestamp: new Date().toISOString()
+  }));
+});
+
+// Start HTTP server on the port specified by Render
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`◆ HTTP server listening on port ${PORT}`);
 });
 
 // Export for use in other files
