@@ -113,15 +113,15 @@ async function handleStreamCreate(interaction, createEmbed, BOT_CONFIG) {
   
   try {
     const streamData = {
-      userId: interaction.user.id,
-      serverId: interaction.guild?.id || null,
-      itemName,
-      creatorName,
-      creatorId,
-      agencyName,
-      dueDate,
+      user_id: interaction.user.id,
+      server_id: interaction.guild?.id || null,
+      item_name: itemName,
+      creator_name: creatorName,
+      creator_id: creatorId,
+      agency_name: agencyName,
+      due_date: dueDate.toISOString(),
       priority,
-      streamType,
+      stream_type: streamType,
       notes,
       status: 'active'
     };
@@ -172,7 +172,7 @@ async function handleStreamCreate(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -189,7 +189,7 @@ async function handleStreamComplete(interaction, createEmbed, BOT_CONFIG) {
         BOT_CONFIG.colors.error
       );
       
-      await interaction.reply({ embeds: [notFoundEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [notFoundEmbed], flags: 64 });
       return;
     }
     
@@ -197,7 +197,7 @@ async function handleStreamComplete(interaction, createEmbed, BOT_CONFIG) {
     
     const successEmbed = createEmbed(
       'Stream Completed Successfully',
-      `Congratulations! You've completed your stream for **${stream.itemName}** by **${stream.creatorName}**.\n\n` +
+      `Congratulations! You've completed your stream for **${stream.item_name}** by **${stream.creator_name}**.\n\n` +
       `**Completed on:** ${new Date().toLocaleDateString()}\n` +
       `**Stream ID:** ${stream.id}\n\n` +
       `${BOT_CONFIG.personality.encouragement} Great work on completing this stream!`,
@@ -215,7 +215,7 @@ async function handleStreamComplete(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -250,12 +250,12 @@ async function handleStreamList(interaction, createEmbed, BOT_CONFIG) {
     );
     
     streams.forEach((stream, index) => {
-      const daysLeft = Math.ceil((new Date(stream.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.ceil((new Date(stream.due_date) - new Date()) / (1000 * 60 * 60 * 24));
       const urgency = daysLeft <= 1 ? '🔴' : daysLeft <= 3 ? '🟡' : '🟢';
       
       listEmbed.addFields({
-        name: `${urgency} ID: ${stream.id} - ${stream.itemName}`,
-        value: `**Creator:** ${stream.creatorName}\n**Due:** ${new Date(stream.dueDate).toLocaleDateString()}\n**Priority:** ${stream.priority}`,
+        name: `${urgency} ID: ${stream.id} - ${stream.item_name}`,
+        value: `**Creator:** ${stream.creator_name}\n**Due:** ${new Date(stream.due_date).toLocaleDateString()}\n**Priority:** ${stream.priority}`,
         inline: true
       });
     });
@@ -271,7 +271,7 @@ async function handleStreamList(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
 
@@ -290,11 +290,11 @@ async function handleStreamInfo(interaction, createEmbed, BOT_CONFIG) {
         BOT_CONFIG.colors.error
       );
       
-      await interaction.reply({ embeds: [notFoundEmbed], ephemeral: true });
+      await interaction.reply({ embeds: [notFoundEmbed], flags: 64 });
       return;
     }
     
-    const daysLeft = Math.ceil((new Date(stream.dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil((new Date(stream.due_date) - new Date()) / (1000 * 60 * 60 * 24));
     const urgency = daysLeft <= 1 ? '🔴' : daysLeft <= 3 ? '🟡' : '🟢';
     
     const infoEmbed = createEmbed(
@@ -304,15 +304,15 @@ async function handleStreamInfo(interaction, createEmbed, BOT_CONFIG) {
     );
     
     infoEmbed.addFields(
-      { name: 'Item Name', value: stream.itemName, inline: true },
-      { name: 'Creator', value: stream.creatorName, inline: true },
-      { name: 'Agency', value: stream.agencyName || 'Not specified', inline: true },
-      { name: 'Due Date', value: new Date(stream.dueDate).toLocaleDateString(), inline: true },
+      { name: 'Item Name', value: stream.item_name, inline: true },
+      { name: 'Creator', value: stream.creator_name, inline: true },
+      { name: 'Agency', value: stream.agency_name || 'Not specified', inline: true },
+      { name: 'Due Date', value: new Date(stream.due_date).toLocaleDateString(), inline: true },
       { name: 'Days Left', value: `${daysLeft} days ${urgency}`, inline: true },
       { name: 'Priority', value: stream.priority.charAt(0).toUpperCase() + stream.priority.slice(1), inline: true },
-      { name: 'Type', value: stream.streamType.charAt(0).toUpperCase() + stream.streamType.slice(1), inline: true },
+      { name: 'Type', value: stream.stream_type.charAt(0).toUpperCase() + stream.stream_type.slice(1), inline: true },
       { name: 'Status', value: stream.status.charAt(0).toUpperCase() + stream.status.slice(1), inline: true },
-      { name: 'Created', value: new Date(stream.createdAt).toLocaleDateString(), inline: true }
+      { name: 'Created', value: new Date(stream.created_at).toLocaleDateString(), inline: true }
     );
     
     if (stream.notes) {
@@ -330,6 +330,6 @@ async function handleStreamInfo(interaction, createEmbed, BOT_CONFIG) {
       BOT_CONFIG.colors.error
     );
     
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    await interaction.reply({ embeds: [errorEmbed], flags: 64 });
   }
 }
