@@ -7,6 +7,7 @@ import cron from 'node-cron';
 import http from 'http';
 import { dbHelpers } from './database/schema.js';
 import { initializeDatabase } from './database/init.js';
+import aiService from './services/aiService.js';
 
 // Load environment variables
 dotenv.config();
@@ -116,6 +117,18 @@ client.once('ready', async () => {
     await initializeDatabase();
   } catch (error) {
     console.error('Failed to initialize database:', error);
+  }
+  
+  // Initialize AI service
+  try {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (geminiApiKey) {
+      aiService.initialize(geminiApiKey);
+    } else {
+      console.log('◆ No Gemini API key found. AI features will use fallback templates.');
+    }
+  } catch (error) {
+    console.error('Failed to initialize AI service:', error);
   }
   
   // Set bot activity

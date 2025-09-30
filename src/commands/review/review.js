@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { dbHelpers } from '../../database/schema.js';
+import aiService from '../../services/aiService.js';
 
 export default {
   data: new SlashCommandBuilder()

@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { dbHelpers } from '../../database/schema.js';
+import aiService from '../../services/aiService.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -102,35 +103,57 @@ async function handleIMVUCaption(interaction, createEmbed, BOT_CONFIG) {
   const additionalTags = interaction.options.getString('additional_tags');
   
   try {
-    // Get agency template
-    const agencyTemplate = await dbHelpers.getAgencyTemplate(agencyName);
-    
-    let caption;
-    if (agencyTemplate && agencyTemplate.length > 0) {
-      caption = generateIMVUCaptionFromTemplate(
-        itemName,
-        creatorName,
-        itemId,
-        manufacturerId,
-        agencyTemplate[0].imvuCaptionFormat,
-        shopLink,
-        additionalTags
+    // Check if AI service is available
+    if (!aiService.isReady()) {
+      // Fallback to template-based generation
+      const agencyTemplate = await dbHelpers.getAgencyTemplate(agencyName);
+      
+      let caption;
+      if (agencyTemplate && agencyTemplate.length > 0) {
+        caption = generateIMVUCaptionFromTemplate(
+          itemName,
+          creatorName,
+          itemId,
+          manufacturerId,
+          agencyTemplate[0].imvu_caption_format,
+          shopLink,
+          additionalTags
+        );
+      } else {
+        caption = generateDefaultIMVUCaption(itemName, creatorName, itemId, manufacturerId);
+      }
+      
+      const embed = createEmbed(
+        'IMVU Caption Generated',
+        `\`\`\`${caption}\`\`\``,
+        BOT_CONFIG.colors.success
       );
-    } else {
-      // Use default format
-      caption = generateDefaultIMVUCaption(
-        itemName,
-        creatorName,
-        itemId,
-        manufacturerId,
-        shopLink,
-        additionalTags
-      );
+      
+      await interaction.reply({ embeds: [embed] });
+      return;
     }
+
+    // Use AI service for enhanced caption generation
+    const itemData = {
+      item_name: itemName,
+      creator_name: creatorName,
+      item_id: itemId,
+      manufacturer_id: manufacturerId,
+      agency_name: agencyName
+    };
+
+    const userPreferences = {
+      captionStyle: 'elegant',
+      additionalTags: additionalTags
+    };
+
+    await interaction.deferReply();
+    
+    const caption = await aiService.generateIMVUCaption(itemData, userPreferences);
     
     const captionEmbed = createEmbed(
-      'IMVU Caption Generated',
-      `Here's your IMVU feed caption:\n\n\`\`\`${caption}\`\`\``,
+      'IMVU Caption Generated ✨',
+      `Here's your AI-generated IMVU feed caption:\n\n\`\`\`${caption}\`\`\``,
       BOT_CONFIG.colors.success
     );
     
@@ -140,7 +163,7 @@ async function handleIMVUCaption(interaction, createEmbed, BOT_CONFIG) {
       { name: 'Agency Format', value: agencyName, inline: true }
     );
     
-    await interaction.reply({ embeds: [captionEmbed] });
+    await interaction.editReply({ embeds: [captionEmbed] });
     
     // Save caption to database
     await dbHelpers.saveCaption({
