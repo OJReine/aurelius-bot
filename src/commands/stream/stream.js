@@ -5,6 +5,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('stream')
     .setDescription('Manage your IMVU modeling streams')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('create')

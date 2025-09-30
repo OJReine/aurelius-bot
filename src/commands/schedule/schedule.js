@@ -5,6 +5,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('schedule')
     .setDescription('Manage your weekly modeling schedule')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('weekly')

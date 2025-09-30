@@ -4,6 +4,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('help')
     .setDescription('Get help with Aurelius commands')
+    .setDMPermission(true)
     .addStringOption(option =>
       option.setName('category')
         .setDescription('Category to get help for')

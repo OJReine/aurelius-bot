@@ -5,6 +5,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('request')
     .setDescription('Generate request formats for different agencies')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('format')

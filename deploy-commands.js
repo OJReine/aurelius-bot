@@ -36,20 +36,20 @@ const deployCommands = async () => {
     
     console.log(`◆ Started refreshing ${commands.length} application (/) commands.`);
     
-    // Deploy to specific guild for testing
+    // Deploy globally for DM functionality and multi-server support
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands }
+    );
+    console.log(`◆ Successfully reloaded ${commands.length} global commands.`);
+    
+    // Also deploy to test guild if specified
     if (process.env.GUILD_ID) {
       await rest.put(
         Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
         { body: commands }
       );
-      console.log(`◆ Successfully reloaded ${commands.length} guild commands.`);
-    } else {
-      // Deploy globally
-      await rest.put(
-        Routes.applicationCommands(process.env.CLIENT_ID),
-        { body: commands }
-      );
-      console.log(`◆ Successfully reloaded ${commands.length} global commands.`);
+      console.log(`◆ Successfully reloaded ${commands.length} guild commands for testing.`);
     }
   } catch (error) {
     console.error('Error deploying commands:', error);

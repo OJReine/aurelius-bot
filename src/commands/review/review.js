@@ -6,6 +6,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('review')
     .setDescription('Generate detailed reviews for IMVU items')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('generate')

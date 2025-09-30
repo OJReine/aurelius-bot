@@ -5,6 +5,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('profile')
     .setDescription('Manage your modeling profile and preferences')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('setup')

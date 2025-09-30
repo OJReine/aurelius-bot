@@ -6,6 +6,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName('caption')
     .setDescription('Generate captions for your IMVU and Instagram posts')
+    .setDMPermission(true)
     .addSubcommand(subcommand =>
       subcommand
         .setName('imvu')
