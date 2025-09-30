@@ -57,18 +57,26 @@ const BOT_CONFIG = {
 
 // Load commands
 const loadCommands = async () => {
-  const commandFolders = readdirSync(join(__dirname, 'commands'));
-  
-  for (const folder of commandFolders) {
-    const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(file => file.endsWith('.js'));
+  try {
+    const commandFolders = readdirSync(join(__dirname, 'commands'));
     
-    for (const file of commandFiles) {
-      const { default: command } = await import(`./commands/${folder}/${file}`);
-      if (command.data && command.execute) {
-        client.commands.set(command.data.name, command);
-        console.log(`◈ Loaded command: ${command.data.name}`);
+    for (const folder of commandFolders) {
+      const commandFiles = readdirSync(join(__dirname, 'commands', folder)).filter(file => file.endsWith('.js'));
+      
+      for (const file of commandFiles) {
+        try {
+          const { default: command } = await import(`./commands/${folder}/${file}`);
+          if (command.data && command.execute) {
+            client.commands.set(command.data.name, command);
+            console.log(`◈ Loaded command: ${command.data.name}`);
+          }
+        } catch (error) {
+          console.error(`Failed to load command ${file}:`, error);
+        }
       }
     }
+  } catch (error) {
+    console.error('Failed to load commands:', error);
   }
 };
 
@@ -108,37 +116,47 @@ const getRandomFooterMotto = () => {
 
 // Bot ready event
 client.once('ready', async () => {
-  console.log(`◈ ${BOT_CONFIG.name} is ready and online!`);
-  console.log(`◈ Logged in as: ${client.user.tag}`);
-  console.log(`◈ Serving ${client.guilds.cache.size} servers`);
-  
-  // Initialize database
   try {
-    await initializeDatabase();
-  } catch (error) {
-    console.error('Failed to initialize database:', error);
-  }
-  
-  // Initialize AI service
-  try {
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (geminiApiKey) {
-      aiService.initialize(geminiApiKey);
-    } else {
-      console.log('◆ No Gemini API key found. AI features will use fallback templates.');
+    console.log(`◈ ${BOT_CONFIG.name} is ready and online!`);
+    console.log(`◈ Logged in as: ${client.user.tag}`);
+    console.log(`◈ Serving ${client.guilds.cache.size} servers`);
+    
+    // Initialize database
+    try {
+      await initializeDatabase();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
     }
+    
+    // Initialize AI service
+    try {
+      const geminiApiKey = process.env.GEMINI_API_KEY;
+      if (geminiApiKey) {
+        aiService.initialize(geminiApiKey);
+      } else {
+        console.log('◆ No Gemini API key found. AI features will use fallback templates.');
+      }
+    } catch (error) {
+      console.error('Failed to initialize AI service:', error);
+    }
+    
+    // Set bot activity
+    try {
+      client.user.setActivity('your modeling journey', { type: ActivityType.Watching });
+    } catch (error) {
+      console.error('Failed to set bot activity:', error);
+    }
+    
+    // Load commands
+    await loadCommands();
+    
+    // Start scheduled tasks
+    startScheduledTasks();
+    
+    console.log('◆ Bot initialization complete!');
   } catch (error) {
-    console.error('Failed to initialize AI service:', error);
+    console.error('Error in bot ready event:', error);
   }
-  
-  // Set bot activity
-  client.user.setActivity('your modeling journey', { type: ActivityType.Watching });
-  
-  // Load commands
-  await loadCommands();
-  
-  // Start scheduled tasks
-  startScheduledTasks();
 });
 
 // Interaction handling
@@ -271,6 +289,52 @@ const startScheduledTasks = () => {
   console.log('◈ Scheduled tasks started');
 };
 
+// Create HTTP server for Render port binding
+const server = http.createServer((req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+  
+  // Health check endpoint
+  if (req.url === '/health' || req.url === '/') {
+    const botStatus = client.isReady() ? 'online' : 'starting';
+    const response = {
+      status: 'healthy',
+      bot: 'Aurelius',
+      botStatus,
+      message: 'Aurelius Discord Bot is running!',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      commands: client.commands?.size || 0
+    };
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(response, null, 2));
+  } else {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  }
+});
+
+// Start HTTP server on the port specified by Render
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, (error) => {
+  if (error) {
+    console.error('◆ Failed to start HTTP server:', error);
+    process.exit(1);
+  }
+  console.log(`◆ HTTP server listening on port ${PORT}`);
+});
+
 // Error handling
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
@@ -289,23 +353,6 @@ process.on('SIGINT', () => {
     client.destroy();
     process.exit(0);
   });
-});
-
-// Create HTTP server for Render port binding
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({
-    status: 'online',
-    bot: 'Aurelius',
-    message: 'Aurelius Discord Bot is running!',
-    timestamp: new Date().toISOString()
-  }));
-});
-
-// Start HTTP server on the port specified by Render
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`◆ HTTP server listening on port ${PORT}`);
 });
 
 // Export for use in other files
