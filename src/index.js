@@ -188,6 +188,12 @@ const startScheduledTasks = () => {
   // Check for overdue streams every hour
   cron.schedule('0 * * * *', async () => {
     try {
+      // Check if database is initialized
+      if (!client.isReady()) {
+        console.log('◆ Bot not ready, skipping overdue streams check');
+        return;
+      }
+      
       const overdueStreams = await dbHelpers.getOverdueStreams();
       
       for (const stream of overdueStreams) {
@@ -196,16 +202,16 @@ const startScheduledTasks = () => {
         
         // Send reminder to user if possible
         try {
-          const user = await client.users.fetch(stream.userId);
+          const user = await client.users.fetch(stream.user_id);
           const reminderEmbed = createEmbed(
             'Stream Reminder',
-            `Your stream for **${stream.itemName}** by **${stream.creatorName}** is now overdue. Please complete it as soon as possible!`,
+            `Your stream for **${stream.item_name}** by **${stream.creator_name}** is now overdue. Please complete it as soon as possible!`,
             BOT_CONFIG.colors.warning
           );
           
           await user.send({ embeds: [reminderEmbed] });
         } catch (error) {
-          console.error(`Could not send reminder to user ${stream.userId}:`, error);
+          console.error(`Could not send reminder to user ${stream.user_id}:`, error);
         }
       }
     } catch (error) {
@@ -216,14 +222,20 @@ const startScheduledTasks = () => {
   // Daily reminder check
   cron.schedule('0 9 * * *', async () => {
     try {
+      // Check if database is initialized
+      if (!client.isReady()) {
+        console.log('◆ Bot not ready, skipping daily reminders check');
+        return;
+      }
+      
       const activeReminders = await dbHelpers.getActiveReminders();
       
       for (const reminder of activeReminders) {
         try {
-          const user = await client.users.fetch(reminder.userId);
+          const user = await client.users.fetch(reminder.user_id);
           const reminderEmbed = createEmbed(
             'Daily Reminder',
-            reminder.reminderText,
+            reminder.reminder_text,
             BOT_CONFIG.colors.info
           );
           
