@@ -1,208 +1,198 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { pgTable, serial, text, timestamp, integer, boolean, json, varchar } from 'drizzle-orm/pg-core';
-import { eq, and, desc, gte, lte } from 'drizzle-orm';
-import pkg from 'pg';
-const { Pool } = pkg;
+import { createClient } from '@supabase/supabase-js';
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const db = drizzle(pool);
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-// Stream Management Tables
-export const streams = pgTable('streams', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).notNull(),
-  serverId: varchar('server_id', { length: 20 }),
-  itemName: text('item_name').notNull(),
-  creatorName: text('creator_name').notNull(),
-  creatorId: varchar('creator_id', { length: 20 }),
-  agencyName: text('agency_name'),
-  dueDate: timestamp('due_date').notNull(),
-  status: varchar('status', { length: 20 }).default('active'), // active, completed, overdue
-  createdAt: timestamp('created_at').defaultNow(),
-  completedAt: timestamp('completed_at'),
-  notes: text('notes'),
-  priority: varchar('priority', { length: 10 }).default('medium'), // low, medium, high
-  streamType: varchar('stream_type', { length: 20 }).default('showcase'), // showcase, sponsored, open
-});
-
-// Weekly Schedule Management
-export const schedules = pgTable('schedules', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).notNull(),
-  serverId: varchar('server_id', { length: 20 }),
-  weekStart: timestamp('week_start').notNull(),
-  weekEnd: timestamp('week_end').notNull(),
-  monday: json('monday'),
-  tuesday: json('tuesday'),
-  wednesday: json('wednesday'),
-  thursday: json('thursday'),
-  friday: json('friday'),
-  saturday: json('saturday'),
-  sunday: json('sunday'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Caption Templates and Generated Captions
-export const captions = pgTable('captions', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).notNull(),
-  streamId: integer('stream_id').references(() => streams.id),
-  platform: varchar('platform', { length: 10 }).notNull(), // imvu, instagram
-  captionText: text('caption_text').notNull(),
-  agencyFormat: text('agency_format'),
-  tags: json('tags'),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-// Item Reviews
-export const reviews = pgTable('reviews', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).notNull(),
-  streamId: integer('stream_id').references(() => streams.id),
-  itemName: text('item_name').notNull(),
-  itemId: varchar('item_id', { length: 50 }),
-  reviewText: text('review_text').notNull(),
-  rating: integer('rating'), // 1-5 stars
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-// User Profiles and Preferences
-export const userProfiles = pgTable('user_profiles', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).primaryKey(),
-  imvuName: text('imvu_name'),
-  instagramHandle: text('instagram_handle'),
-  preferredAgencies: json('preferred_agencies'),
-  captionStyle: varchar('caption_style', { length: 20 }).default('elegant'),
-  timezone: varchar('timezone', { length: 50 }).default('UTC'),
-  reminderSettings: json('reminder_settings'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Reminders and Notifications
-export const reminders = pgTable('reminders', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 20 }).notNull(),
-  serverId: varchar('server_id', { length: 20 }),
-  streamId: integer('stream_id').references(() => streams.id),
-  reminderType: varchar('reminder_type', { length: 20 }).notNull(), // due_date, custom, weekly
-  reminderText: text('reminder_text').notNull(),
-  scheduledFor: timestamp('scheduled_for').notNull(),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-// Agency Templates and Formats
-export const agencyTemplates = pgTable('agency_templates', {
-  id: serial('id').primaryKey(),
-  agencyName: text('agency_name').notNull(),
-  imvuCaptionFormat: text('imvu_caption_format').notNull(),
-  instagramCaptionFormat: text('instagram_caption_format').notNull(),
-  requiredTags: json('required_tags'),
-  optionalTags: json('optional_tags'),
-  requestFormat: text('request_format'),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Database helper functions
 export const dbHelpers = {
   // Stream helpers
   async createStream(data) {
-    return await db.insert(streams).values(data).returning();
+    const { data: result, error } = await supabase
+      .from('streams')
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getActiveStreams(userId, serverId = null) {
-    const whereCondition = serverId 
-      ? and(eq(streams.userId, userId), eq(streams.serverId, serverId), eq(streams.status, 'active'))
-      : and(eq(streams.userId, userId), eq(streams.status, 'active'));
+    let query = supabase
+      .from('streams')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
     
-    return await db.select().from(streams).where(whereCondition).orderBy(desc(streams.createdAt));
+    if (serverId) {
+      query = query.eq('server_id', serverId);
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
   },
   
   async completeStream(streamId) {
-    return await db.update(streams)
-      .set({ status: 'completed', completedAt: new Date() })
-      .where(eq(streams.id, streamId))
-      .returning();
+    const { data, error } = await supabase
+      .from('streams')
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('id', streamId)
+      .select();
+    
+    if (error) throw error;
+    return data;
   },
   
   async getOverdueStreams() {
-    return await db.select().from(streams)
-      .where(and(eq(streams.status, 'active'), lte(streams.dueDate, new Date())));
+    const { data, error } = await supabase
+      .from('streams')
+      .select('*')
+      .eq('status', 'active')
+      .lte('due_date', new Date().toISOString());
+    
+    if (error) throw error;
+    return data;
   },
   
   // Schedule helpers
   async createSchedule(data) {
-    return await db.insert(schedules).values(data).returning();
+    const { data: result, error } = await supabase
+      .from('schedules')
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getCurrentWeekSchedule(userId, weekStart) {
-    return await db.select().from(schedules)
-      .where(and(eq(schedules.userId, userId), eq(schedules.weekStart, weekStart)))
+    const { data, error } = await supabase
+      .from('schedules')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('week_start', weekStart)
       .limit(1);
+    
+    if (error) throw error;
+    return data;
   },
   
   // Caption helpers
   async saveCaption(data) {
-    return await db.insert(captions).values(data).returning();
+    const { data: result, error } = await supabase
+      .from('captions')
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getCaptionsByStream(streamId) {
-    return await db.select().from(captions).where(eq(captions.streamId, streamId));
+    const { data, error } = await supabase
+      .from('captions')
+      .select('*')
+      .eq('stream_id', streamId);
+    
+    if (error) throw error;
+    return data;
   },
   
   // Review helpers
   async saveReview(data) {
-    return await db.insert(reviews).values(data).returning();
+    const { data: result, error } = await supabase
+      .from('reviews')
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getReviewsByStream(streamId) {
-    return await db.select().from(reviews).where(eq(reviews.streamId, streamId));
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('stream_id', streamId);
+    
+    if (error) throw error;
+    return data;
   },
   
   // User profile helpers
   async createOrUpdateProfile(data) {
-    return await db.insert(userProfiles).values(data)
-      .onConflictDoUpdate({
-        target: userProfiles.userId,
-        set: { ...data, updatedAt: new Date() }
-      })
-      .returning();
+    const { data: result, error } = await supabase
+      .from('user_profiles')
+      .upsert(data, { onConflict: 'user_id' })
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getUserProfile(userId) {
-    return await db.select().from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1);
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .limit(1);
+    
+    if (error) throw error;
+    return data;
   },
   
   // Reminder helpers
   async createReminder(data) {
-    return await db.insert(reminders).values(data).returning();
+    const { data: result, error } = await supabase
+      .from('reminders')
+      .insert(data)
+      .select();
+    
+    if (error) throw error;
+    return result;
   },
   
   async getActiveReminders() {
-    return await db.select().from(reminders)
-      .where(and(eq(reminders.isActive, true), lte(reminders.scheduledFor, new Date())));
+    const { data, error } = await supabase
+      .from('reminders')
+      .select('*')
+      .eq('is_active', true)
+      .lte('scheduled_for', new Date().toISOString());
+    
+    if (error) throw error;
+    return data;
   },
   
   // Agency template helpers
   async getAgencyTemplate(agencyName) {
-    return await db.select().from(agencyTemplates)
-      .where(and(eq(agencyTemplates.agencyName, agencyName), eq(agencyTemplates.isActive, true)))
+    const { data, error } = await supabase
+      .from('agency_templates')
+      .select('*')
+      .eq('agency_name', agencyName)
+      .eq('is_active', true)
       .limit(1);
+    
+    if (error) throw error;
+    return data;
   },
   
   async getAllAgencyTemplates() {
-    return await db.select().from(agencyTemplates).where(eq(agencyTemplates.isActive, true));
+    const { data, error } = await supabase
+      .from('agency_templates')
+      .select('*')
+      .eq('is_active', true);
+    
+    if (error) throw error;
+    return data;
   }
 };
 
-export default db;
+export default supabase;
